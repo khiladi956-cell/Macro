@@ -1,0 +1,46 @@
+Sub Clear_K_To_T_From_Merged_G_J()
+
+    Dim ws As Worksheet
+    Dim rng As Range
+    Dim c As Range
+    Dim r As Long
+    Dim dict As Object
+
+    Set ws = ActiveSheet
+    Set dict = CreateObject("Scripting.Dictionary")
+
+    ' Ensure selection is range
+    If TypeName(Selection) <> "Range" Then
+        MsgBox "Please G:J merged cells select karo", vbExclamation
+        Exit Sub
+    End If
+
+    ' Allow only G:J range (example row 19 onward)
+    Set rng = Intersect(Selection, ws.Range("G19:J1000"))
+
+    If rng Is Nothing Then
+        MsgBox "Sirf G:J merged area (G19:J...) select karo", vbCritical
+        Exit Sub
+    End If
+
+    Application.ScreenUpdating = False
+
+    ' Loop each selected cell
+    For Each c In rng.Cells
+        If c.MergeCells Then
+            r = c.MergeArea.Row   ' top row of merged cell
+
+            ' Avoid duplicate clearing for same row
+            If Not dict.exists(r) Then
+                dict.Add r, True
+                ws.Range("K" & r & ":T" & r).ClearContents
+            End If
+        End If
+    Next c
+
+    Application.ScreenUpdating = True
+
+    MsgBox "Selected rows ke K:T columns ka data delete ho gaya ?", vbInformation
+
+End Sub
+
