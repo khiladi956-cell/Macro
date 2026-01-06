@@ -34,6 +34,30 @@ Sub Start_Time()
     ' ?? Record Start Time
     ws.Cells(r, "P").Value = Now
     ws.Cells(r, "P").NumberFormat = "hh:mm:ss"
+    With ActiveSheet
+
+    ' Agar pehle se protected hai to hatao
+    If .ProtectContents Then .Unprotect "123"
+
+    ' ?? Sab unlock
+    .Cells.Locked = False
+
+    ' ?? Sirf Time Columns lock
+    .Range("P19:U50").Locked = True
+
+    ' ?? Protect sheet (USER edit block only)
+    .Protect Password:="123", _
+             UserInterfaceOnly:=True, _
+             AllowFormattingCells:=True, _
+             AllowFormattingRows:=True, _
+             AllowFormattingColumns:=True, _
+             AllowFiltering:=True, _
+             AllowSorting:=True
+
+    ' ?? Allow selection everywhere (no grey feel)
+    .EnableSelection = xlNoRestrictions
+
+End With
 
 End Sub
 
