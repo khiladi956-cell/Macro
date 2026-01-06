@@ -1,46 +1,40 @@
-Sub Clear_K_To_T_From_Merged_G_J()
+Sub Start_Time()
 
     Dim ws As Worksheet
-    Dim rng As Range
-    Dim c As Range
     Dim r As Long
-    Dim dict As Object
+    Dim lastRow As Long
+    Dim i As Long
 
     Set ws = ActiveSheet
-    Set dict = CreateObject("Scripting.Dictionary")
+    r = ActiveCell.Row
 
-    ' Ensure selection is range
-    If TypeName(Selection) <> "Range" Then
-        MsgBox "Please G:J merged cells select karo", vbExclamation
+    ' ?? Check Broad Step & Step Name (merged safe)
+    If Trim(ws.Cells(r, "E").Value) = "" Or _
+       Trim(ws.Cells(r, "G").Value) = "" Then
+        MsgBox "Please fill Broad Step (E:F) and Step Name (G:K) before START!", vbCritical
         Exit Sub
     End If
 
-    ' Allow only G:J range (example row 19 onward)
-    Set rng = Intersect(Selection, ws.Range("G19:J1000"))
-
-    If rng Is Nothing Then
-        MsgBox "Sirf G:J merged area (G19:J...) select karo", vbCritical
+    ' ?? Prevent duplicate START on same row
+    If ws.Cells(r, "P").Value <> "" Then
+        MsgBox "START already recorded for this row!", vbExclamation
         Exit Sub
     End If
 
-    Application.ScreenUpdating = False
+    ' ?? GLOBAL validation ? Only ONE active START allowed
+    lastRow = ws.Cells(ws.Rows.Count, "P").End(xlUp).Row
 
-    ' Loop each selected cell
-    For Each c In rng.Cells
-        If c.MergeCells Then
-            r = c.MergeArea.Row   ' top row of merged cell
-
-            ' Avoid duplicate clearing for same row
-            If Not dict.exists(r) Then
-                dict.Add r, True
-                ws.Range("K" & r & ":T" & r).ClearContents
-            End If
+    For i = 2 To lastRow
+        If ws.Cells(i, "P").Value <> "" And ws.Cells(i, "Q").Value = "" Then
+            MsgBox "Another task is already running (Row " & i & "). Please END it first!", vbCritical
+            Exit Sub
         End If
-    Next c
+    Next i
 
-    Application.ScreenUpdating = True
-
-    MsgBox "Selected rows ke K:T columns ka data delete ho gaya ?", vbInformation
+    ' ?? Record Start Time
+    ws.Cells(r, "P").Value = Now
+    ws.Cells(r, "P").NumberFormat = "hh:mm:ss"
 
 End Sub
+
 
