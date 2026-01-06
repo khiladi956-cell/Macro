@@ -1,0 +1,36 @@
+Sub Highlight_Running_Row(Optional ByVal ForceRow As Long = 0)
+
+    Dim ws As Worksheet
+    Dim r As Long
+
+    Set ws = ActiveSheet
+
+    ' ?? Clear previous highlights
+    ws.Range("D19:U50").Interior.ColorIndex = xlNone
+
+    ' ? FORCE highlight (Resume ke time)
+    If ForceRow >= 19 And ForceRow <= 50 Then
+        ws.Range("D" & ForceRow & ":U" & ForceRow).Interior.Color = RGB(198, 239, 206)
+        Exit Sub
+    End If
+
+    ' ?? Normal auto-detection
+    For r = 19 To 50
+
+        ' ?? PAUSED
+        If ws.Cells(r, "R").Value <> "" And ws.Cells(r, "S").Value = "" Then
+            ws.Range("D" & r & ":U" & r).Interior.Color = RGB(255, 229, 204)
+            Exit For
+        End If
+
+        ' ?? RUNNING
+        If ws.Cells(r, "P").Value <> "" _
+           And ws.Cells(r, "Q").Value = "" _
+           And ws.Cells(r, "R").Value = "" Then
+            ws.Range("D" & r & ":U" & r).Interior.Color = RGB(198, 239, 206)
+            Exit For
+        End If
+
+    Next r
+
+End Sub
