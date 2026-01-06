@@ -1,0 +1,155 @@
+Sub End_Time()
+
+    Dim ws As Worksheet
+    Dim r As Long
+    Dim pauseDuration As Double
+
+    Set ws = ActiveSheet
+    r = ActiveCell.Row
+
+    ' ?? Validation 1: START mandatory
+    If ws.Cells(r, "P").Value = "" Then
+        MsgBox "Please click START first!", vbCritical
+        Exit Sub
+    End If
+
+    ' ?? Validation 2: Already ENDED
+    If ws.Cells(r, "Q").Value <> "" Then
+        MsgBox "End already recorded for this row!", vbExclamation
+        Exit Sub
+    End If
+
+    ' ?? Validation 3: Paused but not Resumed
+    If ws.Cells(r, "R").Value <> "" And ws.Cells(r, "S").Value = "" Then
+        MsgBox "Task is PAUSED. Please RESUME before END!", vbCritical
+        Exit Sub
+    End If
+
+    ' ? Record END time
+    ws.Cells(r, "Q").Value = Now
+    ws.Cells(r, "Q").NumberFormat = "hh:mm:ss"
+
+    ' ?? Calculate Pause Duration (if any)
+    If ws.Cells(r, "T").Value <> "" Then
+        pauseDuration = ws.Cells(r, "T").Value
+    Else
+        pauseDuration = 0
+    End If
+
+    ' ?? Net Duration = End - Start - Pause
+    ws.Cells(r, "U").Value = ws.Cells(r, "Q").Value - ws.Cells(r, "P").Value - pauseDuration
+    ws.Cells(r, "U").NumberFormat = "[hh]:mm:ss"
+
+    ' ?? Unlock range after END
+    ws.Unprotect "123"
+    ws.Range("P19:U50").Locked = False
+    ws.Protect "123"
+
+    ' ?? Auto move to next row Start cell
+    Cells(r + 1, "P").Select
+
+    MsgBox "Task ENDED successfully ?", vbInformation
+
+End Sub
+
+Sub Pause_Time()
+
+    Dim ws As Worksheet
+    Dim r As Long
+    Dim i As Long
+    Dim lastRow As Long
+
+    Set ws = ActiveSheet
+    r = ActiveCell.Row
+
+    ' ?? Validation 1: START must exist
+    If ws.Cells(r, "P").Value = "" Then
+        MsgBox "START not found for this row!", vbCritical
+        Exit Sub
+    End If
+
+    ' ?? Validation 2: END should NOT exist
+    If ws.Cells(r, "Q").Value <> "" Then
+        MsgBox "Task already ENDED. Pause not allowed!", vbCritical
+        Exit Sub
+    End If
+
+    ' ?? Validation 3: Same row me multiple Pause not allowed
+    If ws.Cells(r, "R").Value <> "" And ws.Cells(r, "S").Value = "" Then
+        MsgBox "This task is already in PAUSE state!", vbExclamation
+        Exit Sub
+    End If
+
+    ' ?? Validation 4: Another task should NOT be running
+    lastRow = ws.Cells(ws.Rows.Count, "P").End(xlUp).Row
+
+    For i = 19 To lastRow
+        If i <> r Then
+            If ws.Cells(i, "P").Value <> "" And ws.Cells(i, "Q").Value = "" Then
+                MsgBox "Another task is running (Row " & i & "). Pause not allowed!", vbCritical
+                Exit Sub
+            End If
+        End If
+    Next i
+
+    ' ? Record Pause Start Time
+    ws.Cells(r, "R").Value = Now
+    ws.Cells(r, "R").NumberFormat = "hh:mm:ss"
+
+    MsgBox "Task PAUSED successfully ?", vbInformation
+
+End Sub
+
+
+Sub Resume_Time()
+
+    Dim ws As Worksheet
+    Dim r As Long
+    Dim pauseTime As Double
+
+    Set ws = ActiveSheet
+    r = ActiveCell.Row
+
+    ' ?? Validation 1: START mandatory
+    If ws.Cells(r, "P").Value = "" Then
+        MsgBox "Please click START first!", vbCritical
+        Exit Sub
+    End If
+
+    ' ?? Validation 2: END already done
+    If ws.Cells(r, "Q").Value <> "" Then
+        MsgBox "Task already ENDED. Resume not allowed!", vbCritical
+        Exit Sub
+    End If
+
+    ' ?? Validation 3: Pause mandatory
+    If ws.Cells(r, "R").Value = "" Then
+        MsgBox "Pause not found. Click PAUSE first!", vbCritical
+        Exit Sub
+    End If
+
+    ' ?? Validation 4: Already resumed
+    If ws.Cells(r, "S").Value <> "" Then
+        MsgBox "Already RESUMED for this row!", vbExclamation
+        Exit Sub
+    End If
+
+    ' ?? Record RESUME time
+    ws.Cells(r, "S").Value = Now
+    ws.Cells(r, "S").NumberFormat = "hh:mm:ss"
+
+    ' ?? Calculate current pause duration
+    pauseTime = ws.Cells(r, "S").Value - ws.Cells(r, "R").Value
+
+    ' ?? Add to Total Pause Time
+    If ws.Cells(r, "T").Value = "" Then
+        ws.Cells(r, "T").Value = pauseTime
+    Else
+        ws.Cells(r, "T").Value = ws.Cells(r, "T").Value + pauseTime
+    End If
+
+    ws.Cells(r, "T").NumberFormat = "[hh]:mm:ss"
+
+    MsgBox "Task RESUMED successfully ??", vbInformation
+
+End Sub
