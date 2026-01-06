@@ -1,0 +1,55 @@
+Open the Time & Motion Tracker file.
+
+Go to the summary section (cells E7 to E11).
+
+Fill all mandatory details in E7–E11.
+
+Do not leave any summary cell blank.
+
+Go to the task entry area (rows 19 to 50).
+
+Enter the Broad Step for the task.
+
+Enter the Step Name for the task.
+
+Broad Step and Step Name are mandatory.
+
+Select the row where you want to start the task.
+
+Click the Start button.
+
+Start Time will be captured automatically.
+
+The running row will turn green.
+
+Only one task can run at a time.
+
+You cannot start a new task until the running task is ended.
+
+If you need a break, click the Pause button.
+
+The task will be paused.
+
+The row color will change to yellow.
+
+You cannot pause the same task multiple times.
+
+Click the Resume button to continue the task.
+
+The task will resume from the paused time.
+
+The row color will turn green again.
+
+Click the End button after task completion.
+
+End Time and total duration will be calculated automatically.
+
+To delete tasks, select one or multiple Step Names.
+
+Click Clear Line to remove all related data.
+
+After completing all tasks, click the Archive button.
+
+Choose the folder and save the file.
+
+All data will be cleared automatically for next use.
