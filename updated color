@@ -12,36 +12,37 @@ Sub Highlight_Running_Row(Optional ByVal ForceRow As Long = 0)
         End If
     Next r
 
-    ' FORCE highlight (Resume ke time)
+    ' 🔴 ABSOLUTE PRIORITY: Ended rows → Grey
+    For r = 19 To 50
+        If ws.Cells(r, "S").Value <> "" Then
+            ws.Range("D" & r & ":U" & r).Interior.ColorIndex = 15
+        End If
+    Next r
+
+    ' FORCE highlight (Resume case only)
     If ForceRow >= 19 And ForceRow <= 50 Then
-        ws.Range("D" & ForceRow & ":U" & ForceRow).Interior.Color = RGB(198, 239, 206)
+        ws.Range("D" & ForceRow & ":U" & ForceRow).Interior.ColorIndex = 35
         Exit Sub
     End If
 
-    ' Auto detection & highlight
+    ' Detect current active row
     For r = 19 To 50
 
-        ' ✅ ENDED → Grey (WORKS on ALL systems)
-        If ws.Cells(r, "S").Value <> "" Then
-            ws.Range("D" & r & ":U" & r).Interior.ColorIndex = 15
-            GoTo NextRow
-        End If
-
-        ' ⏸ PAUSED → Orange
+        ' PAUSED → Orange
         If ws.Cells(r, "R").Value <> "" And ws.Cells(r, "S").Value = "" Then
             ws.Range("D" & r & ":U" & r).Interior.ColorIndex = 45
             Exit For
         End If
 
-        ' ▶ RUNNING → Green
+        ' RUNNING → Green
         If ws.Cells(r, "P").Value <> "" _
            And ws.Cells(r, "Q").Value = "" _
-           And ws.Cells(r, "R").Value = "" Then
+           And ws.Cells(r, "R").Value = "" _
+           And ws.Cells(r, "S").Value = "" Then
             ws.Range("D" & r & ":U" & r).Interior.ColorIndex = 35
             Exit For
         End If
 
-NextRow:
     Next r
 
 End Sub
