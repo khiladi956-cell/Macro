@@ -1,44 +1,55 @@
-Sub Highlight_Running_Row(Optional ByVal ForceRow As Long = 0)
+Sub Highlight_Running_Row(Optional ByVal ForceRow As Long = 0, _
+                          Optional ByVal Mode As String = "")
 
     Dim ws As Worksheet
     Dim r As Long
+    Mode = UCase(Mode)
 
     Set ws = ActiveSheet
 
-    ' Clear highlight ONLY from non-ended rows
+    ' 1️⃣ Permanent GREY for ENDED rows
     For r = 19 To 50
-        If ws.Cells(r, "S").Value = "" Then
-            ws.Range("D" & r & ":U" & r).Interior.ColorIndex = xlNone
-        End If
-    Next r
-
-    ' 🔴 ABSOLUTE PRIORITY: Ended rows → Grey
-    For r = 19 To 50
-        If ws.Cells(r, "S").Value <> "" Then
+        If ws.Cells(r, "Q").Value <> "" Then
             ws.Range("D" & r & ":U" & r).Interior.ColorIndex = 15
         End If
     Next r
 
-    ' FORCE highlight (Resume case only)
+    ' 2️⃣ Clear only NON-ended rows
+    For r = 19 To 50
+        If ws.Cells(r, "Q").Value = "" Then
+            ws.Range("D" & r & ":U" & r).Interior.ColorIndex = xlNone
+        End If
+    Next r
+
+    ' 3️⃣ FORCE MODE HANDLING
     If ForceRow >= 19 And ForceRow <= 50 Then
-        ws.Range("D" & ForceRow & ":U" & ForceRow).Interior.ColorIndex = 35
-        Exit Sub
+
+        Select Case Mode
+            Case "END"
+                ws.Range("D" & ForceRow & ":U" & ForceRow).Interior.ColorIndex = 15
+                Exit Sub
+
+            Case "RESUME", "START"
+                ws.Range("D" & ForceRow & ":U" & ForceRow).Interior.ColorIndex = 35
+                Exit Sub
+        End Select
+
     End If
 
-    ' Detect current active row
+    ' 4️⃣ Auto detect (fallback)
     For r = 19 To 50
 
-        ' PAUSED → Orange
-        If ws.Cells(r, "R").Value <> "" And ws.Cells(r, "S").Value = "" Then
+        ' PAUSED
+        If ws.Cells(r, "R").Value <> "" _
+           And ws.Cells(r, "Q").Value = "" Then
             ws.Range("D" & r & ":U" & r).Interior.ColorIndex = 45
             Exit For
         End If
 
-        ' RUNNING → Green
+        ' RUNNING
         If ws.Cells(r, "P").Value <> "" _
            And ws.Cells(r, "Q").Value = "" _
-           And ws.Cells(r, "R").Value = "" _
-           And ws.Cells(r, "S").Value = "" Then
+           And ws.Cells(r, "R").Value = "" Then
             ws.Range("D" & r & ":U" & r).Interior.ColorIndex = 35
             Exit For
         End If
