@@ -1,0 +1,47 @@
+Sub Highlight_Running_Row(Optional ByVal ForceRow As Long = 0)
+
+    Dim ws As Worksheet
+    Dim r As Long
+
+    Set ws = ActiveSheet
+
+    ' Clear highlight ONLY from non-ended rows
+    For r = 19 To 50
+        If ws.Cells(r, "S").Value = "" Then
+            ws.Range("D" & r & ":U" & r).Interior.ColorIndex = xlNone
+        End If
+    Next r
+
+    ' FORCE highlight (Resume ke time)
+    If ForceRow >= 19 And ForceRow <= 50 Then
+        ws.Range("D" & ForceRow & ":U" & ForceRow).Interior.Color = RGB(198, 239, 206)
+        Exit Sub
+    End If
+
+    ' Auto detection & highlight
+    For r = 19 To 50
+
+        ' ? ENDED ? Grey (Permanent)
+        If ws.Cells(r, "S").Value <> "" Then
+            ws.Range("D" & r & ":U" & r).Interior.Color = RGB(217, 217, 217)
+            GoTo NextRow
+        End If
+
+        ' ? PAUSED ? Orange
+        If ws.Cells(r, "R").Value <> "" And ws.Cells(r, "S").Value = "" Then
+            ws.Range("D" & r & ":U" & r).Interior.Color = RGB(255, 229, 204)
+            Exit For
+        End If
+
+        ' ? RUNNING ? Green
+        If ws.Cells(r, "P").Value <> "" _
+           And ws.Cells(r, "Q").Value = "" _
+           And ws.Cells(r, "R").Value = "" Then
+            ws.Range("D" & r & ":U" & r).Interior.Color = RGB(198, 239, 206)
+            Exit For
+        End If
+
+NextRow:
+    Next r
+
+End Sub
