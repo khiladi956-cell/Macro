@@ -1,0 +1,48 @@
+Sub Copy_Paste_Data()
+
+    Dim ws1 As Worksheet
+    Dim ws2 As Worksheet
+    Dim lastRow As Long
+    Dim srcRow As Long
+    Dim destRow As Long
+
+    Set ws1 = ThisWorkbook.Sheets("Sheet1")
+    Set ws2 = ThisWorkbook.Sheets("Sheet2")
+
+    ' ===============================
+    ' FIXED CELL COPY (previous logic)
+    ' ===============================
+    ws2.Range("F7").Value = ws1.Range("F6").Value
+    ws2.Range("F10").Value = ws1.Range("F7").Value
+    ws2.Range("F11").Value = ws1.Range("F8").Value
+    ws2.Range("F12").Value = ws1.Range("F9").Value
+
+    ws2.Range("F8").Value = ws1.Range("H7").Value
+    ws2.Range("F9").Value = ws1.Range("H9").Value
+
+    ' ===============================
+    ' DYNAMIC MERGED COPY
+    ' ===============================
+
+    ' Last row based on column E
+    lastRow = ws1.Cells(ws1.Rows.Count, "E").End(xlUp).Row
+
+    destRow = 19
+
+    For srcRow = 16 To lastRow
+
+        ' Sheet1 E ? Sheet2 E:F (merged)
+        ws2.Range("E" & destRow & ":F" & destRow).Merge
+        ws2.Range("E" & destRow).Value = ws1.Cells(srcRow, "E").Value
+
+        ' Sheet1 H ? Sheet2 G:K (merged)
+        ws2.Range("G" & destRow & ":K" & destRow).Merge
+        ws2.Range("G" & destRow).Value = ws1.Cells(srcRow, "H").Value
+
+        destRow = destRow + 1
+
+    Next srcRow
+
+    MsgBox "Data copied successfully ?", vbInformation
+
+End Sub
