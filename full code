@@ -1,0 +1,291 @@
+Sub Highlight_Running_Row(Optional ByVal ForceRow As Long = 0, _
+                          Optional ByVal Mode As String = "")
+
+    Dim ws As Worksheet
+    Dim r As Long
+    Mode = UCase(Mode)
+
+    Set ws = ActiveSheet
+
+    ' 1?? Permanent GREY for ENDED rows
+    For r = 19 To 50
+        If ws.Cells(r, "Q").Value <> "" Then
+            ws.Range("D" & r & ":U" & r).Interior.ColorIndex = 15
+        End If
+    Next r
+
+    ' 2?? Clear only NON-ended rows
+    For r = 19 To 50
+        If ws.Cells(r, "Q").Value = "" Then
+            ws.Range("D" & r & ":U" & r).Interior.ColorIndex = xlNone
+        End If
+    Next r
+
+    ' 3?? FORCE MODE HANDLING
+    If ForceRow >= 19 And ForceRow <= 50 Then
+
+        Select Case Mode
+            Case "END"
+                ws.Range("D" & ForceRow & ":U" & ForceRow).Interior.ColorIndex = 15
+                Exit Sub
+
+            Case "RESUME", "START"
+                ws.Range("D" & ForceRow & ":U" & ForceRow).Interior.ColorIndex = 35
+                Exit Sub
+        End Select
+
+    End If
+
+    ' 4?? Auto detect (fallback)
+    For r = 19 To 50
+
+        ' PAUSED
+        If ws.Cells(r, "R").Value <> "" _
+           And ws.Cells(r, "Q").Value = "" Then
+            ws.Range("D" & r & ":U" & r).Interior.ColorIndex = 45
+            Exit For
+        End If
+
+        ' RUNNING
+        If ws.Cells(r, "P").Value <> "" _
+           And ws.Cells(r, "Q").Value = "" _
+           And ws.Cells(r, "R").Value = "" Then
+            ws.Range("D" & r & ":U" & r).Interior.ColorIndex = 35
+            Exit For
+        End If
+
+    Next r
+
+End Sub
+
+
+
+
+
+
+Sub Start_Time()
+
+    Dim ws As Worksheet
+    Dim r As Long
+    Dim lastRow As Long
+    Dim i As Long
+
+    Set ws = ActiveSheet
+
+    ' ?? FIRST START FORCE TO ROW 19
+    If Trim(ws.Cells(19, "P").Value) = "" Then
+        r = 19
+    Else
+        r = ActiveCell.Row
+    End If
+
+    ' ?? Check Broad Step & Step Name (merged safe)
+    If Trim(ws.Cells(r, "E").Value) = "" Or _
+       Trim(ws.Cells(r, "G").Value) = "" Then
+        MsgBox "Please fill Broad Step (E:F) and Step Name (G:K) before START!", vbCritical
+        Exit Sub
+    End If
+
+    ' ?? Prevent duplicate START on same row
+    If ws.Cells(r, "P").Value <> "" Then
+        MsgBox "START already recorded for this row!", vbExclamation
+        Exit Sub
+    End If
+
+    ' ?? Only ONE active START allowed
+    lastRow = ws.Cells(ws.Rows.Count, "P").End(xlUp).Row
+
+    For i = 19 To lastRow
+        If ws.Cells(i, "P").Value <> "" And ws.Cells(i, "Q").Value = "" Then
+            MsgBox "Another task is already running (Row " & i & "). Please END it first!", vbCritical
+            Exit Sub
+        End If
+    Next i
+
+    ' ?? Record Start Time
+    ws.Cells(r, "P").Value = Now
+    ws.Cells(r, "P").NumberFormat = "hh:mm:ss"
+
+    With ws
+        If .ProtectContents Then .Unprotect "123"
+
+        .Cells.Locked = False
+        .Range("P19:U50").Locked = True
+
+        .Protect Password:="123", _
+                 UserInterfaceOnly:=True, _
+                 AllowFormattingCells:=True, _
+                 AllowFormattingRows:=True, _
+                 AllowFormattingColumns:=True, _
+                 AllowFiltering:=True, _
+                 AllowSorting:=True
+
+        .EnableSelection = xlNoRestrictions
+    End With
+
+    Call Highlight_Running_Row(r, "START")
+
+End Sub
+
+
+Sub End_Time()
+
+    Dim ws As Worksheet
+    Dim r As Long
+    Dim i As Long
+    Dim pauseDuration As Double
+    Dim foundRunning As Boolean
+
+    Set ws = ActiveSheet
+    foundRunning = False
+
+    ' ?? Find currently RUNNING task
+    For i = 19 To 50
+        If ws.Cells(i, "P").Value <> "" And ws.Cells(i, "Q").Value = "" Then
+            r = i
+            foundRunning = True
+            Exit For
+        End If
+    Next i
+
+    ' ? No running task found
+    If Not foundRunning Then
+        MsgBox "No running task found! Please click START first.", vbCritical
+        Exit Sub
+    End If
+
+    ' ? Paused but not resumed
+    If ws.Cells(r, "R").Value <> "" And ws.Cells(r, "S").Value = "" Then
+        MsgBox "Task is PAUSED. Please RESUME before END!", vbCritical
+        Exit Sub
+    End If
+
+    ' ? Record END time
+    ws.Cells(r, "Q").Value = Now
+    ws.Cells(r, "Q").NumberFormat = "hh:mm:ss"
+
+    ' ?? Pause duration
+    If ws.Cells(r, "T").Value <> "" Then
+        pauseDuration = ws.Cells(r, "T").Value
+    Else
+        pauseDuration = 0
+    End If
+
+    ' ?? Net Duration
+    ws.Cells(r, "U").Value = ws.Cells(r, "Q").Value - ws.Cells(r, "P").Value - pauseDuration
+    ws.Cells(r, "U").NumberFormat = "[hh]:mm:ss"
+
+    ' ?? Unlock after END
+    ws.Unprotect "123"
+    ws.Range("P19:U50").Locked = False
+    ws.Protect "123"
+
+    ' ?? Move selection to next row (optional)
+    ws.Cells(r + 1, "P").Select
+
+    MsgBox "Task ENDED successfully ?", vbInformation
+
+    Call Highlight_Running_Row(r, "END")
+
+End Sub
+
+Sub Pause_Time()
+
+    Dim ws As Worksheet
+    Dim r As Long
+    Dim i As Long
+    Dim foundRunning As Boolean
+
+    Set ws = ActiveSheet
+    foundRunning = False
+
+    ' ?? Find currently RUNNING task
+    For i = 19 To 50
+        If ws.Cells(i, "P").Value <> "" And ws.Cells(i, "Q").Value = "" Then
+            r = i
+            foundRunning = True
+            Exit For
+        End If
+    Next i
+
+    ' ? No running task
+    If Not foundRunning Then
+        MsgBox "No running task found! Please click START first.", vbCritical
+        Exit Sub
+    End If
+
+    ' ? Already PAUSED (Pause without Resume)
+    If ws.Cells(r, "R").Value <> "" And ws.Cells(r, "S").Value = "" Then
+        MsgBox "Task is already in PAUSE state!", vbExclamation
+        Exit Sub
+    End If
+
+    ' ? Task already ENDED
+    If ws.Cells(r, "Q").Value <> "" Then
+        MsgBox "Task already ENDED. Pause not allowed!", vbCritical
+        Exit Sub
+    End If
+
+    ' ? Record Pause Start Time
+    ws.Cells(r, "R").Value = Now
+    ws.Cells(r, "R").NumberFormat = "hh:mm:ss"
+
+    MsgBox "Task PAUSED successfully ??", vbInformation
+
+    Call Highlight_Running_Row(r, "PAUSE")
+
+End Sub
+
+
+Sub Resume_Time()
+
+    Dim ws As Worksheet
+    Dim r As Long
+    Dim i As Long
+    Dim pauseTime As Double
+    Dim foundPaused As Boolean
+
+    Set ws = ActiveSheet
+    foundPaused = False
+
+    ' ?? Find currently PAUSED task
+    For i = 19 To 50
+        If ws.Cells(i, "P").Value <> "" And _
+           ws.Cells(i, "Q").Value = "" And _
+           ws.Cells(i, "R").Value <> "" And _
+           ws.Cells(i, "S").Value = "" Then
+
+            r = i
+            foundPaused = True
+            Exit For
+        End If
+    Next i
+
+    ' ? No paused task found
+    If Not foundPaused Then
+        MsgBox "No paused task found! Please click PAUSE first.", vbCritical
+        Exit Sub
+    End If
+
+    ' ? Record RESUME time
+    ws.Cells(r, "S").Value = Now
+    ws.Cells(r, "S").NumberFormat = "hh:mm:ss"
+
+    ' ?? Calculate pause duration
+    pauseTime = ws.Cells(r, "S").Value - ws.Cells(r, "R").Value
+
+    ' ? Add to total pause time
+    If ws.Cells(r, "T").Value = "" Then
+        ws.Cells(r, "T").Value = pauseTime
+    Else
+        ws.Cells(r, "T").Value = ws.Cells(r, "T").Value + pauseTime
+    End If
+
+    ws.Cells(r, "T").NumberFormat = "[hh]:mm:ss"
+
+    MsgBox "Task RESUMED successfully ??", vbInformation
+
+    Call Highlight_Running_Row(r, "RESUME")
+
+End Sub
+
