@@ -1,3 +1,20 @@
+Function TimeToText(t As Double) As String
+    Dim totalSeconds As Long
+    Dim hh As Long, mm As Long, ss As Long
+
+    totalSeconds = CLng(t * 86400)   ' Excel time → seconds
+
+    hh = totalSeconds \ 3600
+    mm = (totalSeconds Mod 3600) \ 60
+    ss = totalSeconds Mod 60
+
+    TimeToText = Format(hh, "00") & ":" & _
+                 Format(mm, "00") & ":" & _
+                 Format(ss, "00")
+End Function
+
+
+
 Sub Save_file()
 
     Dim filePath As Variant
