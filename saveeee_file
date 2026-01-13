@@ -8,9 +8,9 @@ Sub Save_file()
     Dim totalTime As Double
     Dim response As VbMsgBoxResult
 
-    '-----------------------------
+    '---------------------------------
     ' Read mandatory header values
-    '-----------------------------
+    '---------------------------------
     b2Val = Trim(Range("E7").Value)
     b3Val = Trim(Range("E9").Value)
     b4Val = Trim(Range("E12").Value)
@@ -21,46 +21,46 @@ Sub Save_file()
         Exit Sub
     End If
 
-    '-----------------------------
+    '---------------------------------
     ' Find last row of time data
-    '-----------------------------
+    '---------------------------------
     lastIRow = Cells(Rows.Count, "U").End(xlUp).Row
 
-    '-----------------------------
-    ' Calculate total time FIRST
-    '-----------------------------
-    If lastIRow >= 20 Then
-        totalTime = Application.WorksheetFunction.Sum(Range("U20:U" & lastIRow))
-        Range("E14").Value = totalTime
-        Range("E14").NumberFormat = "[hh]:mm:ss"
-    Else
-        MsgBox "No time data found to save!", vbExclamation
+    If lastIRow < 20 Then
+        MsgBox "No time data found!", vbExclamation
         Exit Sub
     End If
 
-    '-----------------------------
+    '---------------------------------
+    ' Calculate total time
+    '---------------------------------
+    totalTime = Application.WorksheetFunction.Sum(Range("U20:U" & lastIRow))
+
+    ' Show total time as TEXT in sheet
+    Range("E14").Value = TimeToText(totalTime)
+    Range("E14").NumberFormat = "@"
+
+    '---------------------------------
     ' Ask user confirmation
-    '-----------------------------
+    '---------------------------------
     response = MsgBox( _
-        "Total Time Calculated: " & Format(totalTime, "[hh]:mm:ss") & vbCrLf & vbCrLf & _
+        "Total Time Calculated: " & TimeToText(totalTime) & vbCrLf & vbCrLf & _
         "Do you want to SAVE this file?", _
         vbQuestion + vbYesNo, _
         "Confirm Save")
 
-    If response = vbNo Then
-        Exit Sub   ' Stay on same sheet, nothing happens
-    End If
+    If response = vbNo Then Exit Sub
 
-    '-----------------------------
+    '---------------------------------
     ' Generate file name
-    '-----------------------------
+    '---------------------------------
     todayDate = Format(Now, "dd-mmm hh-mm")
 
     fileName = "T&M" & "_" & b2Val & "_" & b4Val & "_" & b3Val & "_" & todayDate & ".xlsm"
 
-    '-----------------------------
+    '---------------------------------
     ' Ask save location
-    '-----------------------------
+    '---------------------------------
     filePath = Application.GetSaveAsFilename( _
         InitialFileName:=fileName, _
         FileFilter:="Excel Macro-Enabled Workbook (*.xlsm), *.xlsm", _
@@ -71,14 +71,14 @@ Sub Save_file()
         Exit Sub
     End If
 
-    '-----------------------------
+    '---------------------------------
     ' Save copy of workbook
-    '-----------------------------
+    '---------------------------------
     ThisWorkbook.SaveCopyAs filePath
 
-    '-----------------------------
-    ' Clear sheet AFTER save
-    '-----------------------------
+    '---------------------------------
+    ' Clear sheet AFTER successful save
+    '---------------------------------
     With ThisWorkbook.ActiveSheet
         .Range("D20:U50").ClearContents
         .Range("E7:E14").ClearContents
