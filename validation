@@ -1,0 +1,69 @@
+Sub Copy_Paste_Data()
+
+    Dim ws1 As Worksheet
+    Dim lastRow As Long
+    Dim hasE As Boolean, hasH As Boolean
+    Dim c As Range
+
+    Set ws1 = ActiveSheet   ' या specific sheet name
+    
+    ' -------------------------------
+    ' Find last used row based on Column E
+    ' -------------------------------
+    lastRow = ws1.Cells(ws1.Rows.Count, "E").End(xlUp).Row
+
+    ' Safety check
+    If lastRow < 14 Then
+        MsgBox "No activity data found to process.", vbExclamation, "Data Missing"
+        Exit Sub
+    End If
+
+    hasE = False
+    hasH = False
+
+    ' -------------------------------
+    ' Check Column E (E14:lastRow)
+    ' -------------------------------
+    For Each c In ws1.Range("E14:E" & lastRow)
+        If Trim(c.Value) <> "" Then
+            hasE = True
+            Exit For
+        End If
+    Next c
+
+    ' -------------------------------
+    ' Check Column H (H14:lastRow)
+    ' -------------------------------
+    For Each c In ws1.Range("H14:H" & lastRow)
+        If Trim(c.Value) <> "" Then
+            hasH = True
+            Exit For
+        End If
+    Next c
+
+    ' -------------------------------
+    ' Final IF condition
+    ' -------------------------------
+    If hasE = False Or hasH = False Then
+        MsgBox _
+            "Please enter at least one activity before proceeding." & vbCrLf & vbCrLf & _
+            "Required:" & vbCrLf & _
+            "• Column E (Broad Step) – minimum 1 entry" & vbCrLf & _
+            "• Column H (Step Name) – minimum 1 entry", _
+            vbExclamation, _
+            "Missing Activity Data"
+        Exit Sub
+    End If
+
+    ' -------------------------------
+    ' ✅ IF validation passed
+    ' -------------------------------
+    MsgBox "Validation successful. Code can proceed further.", vbInformation
+
+    ' 👉 Yahan aap apna:
+    ' Save logic
+    ' Copy–paste logic
+    ' Calculation logic
+    ' Add kar sakte ho
+
+End Sub
