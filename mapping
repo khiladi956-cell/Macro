@@ -1,0 +1,32 @@
+Sub Add_Data_To_Volumetric()
+
+    Dim wsVol As Worksheet
+    Dim wsInp As Worksheet
+    Dim nextRow As Long
+
+    Set wsVol = ThisWorkbook.Sheets("Volumetric")
+    Set wsInp = ThisWorkbook.Sheets("Input_form")
+
+    ' Next empty row in Volumetric (Column B ke basis par)
+    nextRow = wsVol.Cells(wsVol.Rows.Count, "B").End(xlUp).Row + 1
+
+    ' Auto Increment in Column A
+    If nextRow = 2 Then
+        wsVol.Cells(nextRow, "A").Value = 1
+    Else
+        wsVol.Cells(nextRow, "A").Value = wsVol.Cells(nextRow - 1, "A").Value + 1
+    End If
+
+    ' Data mapping from Input_form to Volumetric
+    wsVol.Cells(nextRow, "B").Value = wsInp.Range("E6").Value
+    wsVol.Cells(nextRow, "C").Value = wsInp.Range("G7").Value
+    wsVol.Cells(nextRow, "D").Value = wsInp.Range("G9").Value
+    wsVol.Cells(nextRow, "E").Value = wsInp.Range("G11").Value
+    wsVol.Cells(nextRow, "F").Value = wsInp.Range("E7").Value
+    wsVol.Cells(nextRow, "G").Value = wsInp.Range("E8").Value
+    wsVol.Cells(nextRow, "H").Value = wsInp.Range("E11").Value
+    wsVol.Cells(nextRow, "I").Value = wsInp.Range("E10").Value
+
+    MsgBox "Data successfully added in Volumetric sheet", vbInformation
+
+End Sub
