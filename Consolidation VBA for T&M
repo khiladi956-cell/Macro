@@ -1,0 +1,96 @@
+Sub Consolidate_Time_Motion_And_Volumetrics()
+
+    Dim fDialog As FileDialog
+    Dim folderPath As String
+    Dim fileName As String
+
+    Dim wbSrc As Workbook
+    Dim ws1 As Worksheet, ws2 As Worksheet
+    Dim wsDest As Worksheet
+
+    Dim lastRowSrc As Long
+    Dim destRow As Long
+    Dim i As Long
+
+    Application.ScreenUpdating = False
+    Application.Calculation = xlCalculationManual
+    Application.EnableEvents = False
+
+    Set wsDest = ThisWorkbook.Sheets("data")
+
+    '--------------------------------------------------
+    ' Pick Folder
+    '--------------------------------------------------
+    Set fDialog = Application.FileDialog(msoFileDialogFolderPicker)
+    If fDialog.Show <> -1 Then GoTo ExitMacro
+    folderPath = fDialog.SelectedItems(1) & "\"
+
+    ' Start destination row (append mode)
+    destRow = wsDest.Cells(wsDest.Rows.Count, "A").End(xlUp).Row + 1
+
+    ' Pick all Excel files (xls, xlsx, xlsm)
+    fileName = Dir(folderPath & "*.xls*")
+
+    Do While fileName <> ""
+
+        Set wbSrc = Workbooks.Open(folderPath & fileName, _
+                                   ReadOnly:=True, UpdateLinks:=False)
+
+        Set ws1 = wbSrc.Sheets("Step-1_Time and Motion")
+        Set ws2 = wbSrc.Sheets("Step-2_Volumetrics")
+
+        '--------------------------------------------------
+        ' LAST ROW (keeps blank rows in between)
+        '--------------------------------------------------
+        lastRowSrc = ws1.UsedRange.Row + ws1.UsedRange.Rows.Count - 1
+
+        '--------------------------------------------------
+        ' LOOP THROUGH EACH ROW (21 TO LAST ROW)
+        '--------------------------------------------------
+        For i = 21 To lastRowSrc
+
+            ' D:Q ? A:N
+            wsDest.Cells(destRow, "A").Resize(1, 14).Value = _
+                ws1.Cells(i, "D").Resize(1, 14).Value
+
+            ' E7:E15 ? O:W (transpose)
+            wsDest.Cells(destRow, "O").Resize(1, 9).Value = _
+                Application.Transpose(ws1.Range("E7:E15").Value)
+
+            ' H7:H8 ? X:Y (transpose)
+            wsDest.Cells(destRow, "X").Resize(1, 2).Value = _
+                Application.Transpose(ws1.Range("H7:H8").Value)
+
+            ' K7:K8 ? Z:AA (transpose)
+            wsDest.Cells(destRow, "Z").Resize(1, 2).Value = _
+                Application.Transpose(ws1.Range("K7:K8").Value)
+
+            ' Sheet2 K2:V2 ? AB:AM
+            wsDest.Cells(destRow, "AB").Resize(1, 12).Value = _
+                ws2.Range("K3:V3").Value
+
+            '--------------------------------------------------
+            ' File Name ? AN
+            '--------------------------------------------------
+            wsDest.Cells(destRow, "AN").Value = fileName
+
+            ' Move to next destination row
+            destRow = destRow + 1
+
+        Next i
+
+        wbSrc.Close SaveChanges:=False
+        fileName = Dir
+
+    Loop
+
+ExitMacro:
+    Application.ScreenUpdating = True
+    Application.Calculation = xlCalculationAutomatic
+    Application.EnableEvents = True
+
+    MsgBox "Consolidation completed successfully!", vbInformation
+
+End Sub
+
+
