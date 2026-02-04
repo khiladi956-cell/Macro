@@ -1,0 +1,57 @@
+Sub Run_Consolidation()
+
+    Dim userChoice As VbMsgBoxResult
+    Dim folderPath As String
+    Dim fileName As String
+    Dim fd As FileDialog
+    Dim i As Long
+
+    userChoice = MsgBox( _
+        "YES = Select Folder" & vbCrLf & _
+        "NO = Select Multiple Files", _
+        vbYesNoCancel + vbQuestion, _
+        "Consolidation Option")
+
+    If userChoice = vbCancel Then Exit Sub
+
+    '========================
+    ' FOLDER MODE
+    '========================
+    If userChoice = vbYes Then
+
+        With Application.FileDialog(msoFileDialogFolderPicker)
+            If .Show <> -1 Then Exit Sub
+            folderPath = .SelectedItems(1) & "\"
+        End With
+
+        fileName = Dir(folderPath & "*.xls*")
+
+        Do While fileName <> ""
+            Call ProcessFile(folderPath & fileName)
+            fileName = Dir
+        Loop
+
+    '========================
+    ' MULTI FILE MODE
+    '========================
+    ElseIf userChoice = vbNo Then
+
+        Set fd = Application.FileDialog(msoFileDialogFilePicker)
+
+        With fd
+            .AllowMultiSelect = True
+            .Title = "Select Excel Files"
+            .Filters.Clear
+            .Filters.Add "Excel Files", "*.xls;*.xlsx;*.xlsm"
+
+            If .Show <> -1 Then Exit Sub
+
+            For i = 1 To .SelectedItems.Count
+                Call ProcessFile(.SelectedItems(i))
+            Next i
+        End With
+    End If
+
+    MsgBox "Consolidation Completed Successfully ✔️", vbInformation
+
+End Sub
