@@ -1,0 +1,77 @@
+Sub Copy_A1_A10_From_Folder_Or_Files()
+
+    Dim fDialog As FileDialog
+    Dim fso As Object
+    Dim fldr As Object
+    Dim fl As Object
+    Dim wbSrc As Workbook
+    Dim wsSrc As Worksheet
+    Dim wsDest As Worksheet
+    Dim nextRow As Long
+    Dim userChoice As VbMsgBoxResult
+    Dim filePath As Variant
+
+    Set wsDest = ThisWorkbook.Sheets("data") 'Sheet2 data
+
+    userChoice = MsgBox("Yes = Select Folder" & vbCrLf & _
+                         "No = Select Multiple Files", _
+                         vbYesNoCancel + vbQuestion, "Select Option")
+
+    If userChoice = vbCancel Then Exit Sub
+
+    '========================
+    ' FOLDER SELECTION
+    '========================
+    If userChoice = vbYes Then
+
+        Set fDialog = Application.FileDialog(msoFileDialogFolderPicker)
+        If fDialog.Show = -1 Then
+
+            Set fso = CreateObject("Scripting.FileSystemObject")
+            Set fldr = fso.GetFolder(fDialog.SelectedItems(1))
+
+            For Each fl In fldr.Files
+                If LCase(fso.GetExtensionName(fl.Name)) Like "xls*" Then
+
+                    Set wbSrc = Workbooks.Open(fl.Path)
+                    Set wsSrc = wbSrc.Sheets("data")
+
+                    nextRow = wsDest.Cells(wsDest.Rows.Count, "A").End(xlUp).Row + 1
+                    wsSrc.Range("A1:A10").Copy wsDest.Cells(nextRow, 1)
+
+                    wbSrc.Close False
+                End If
+            Next fl
+        End If
+
+    '========================
+    ' MULTIPLE FILE SELECTION
+    '========================
+    ElseIf userChoice = vbNo Then
+
+        Set fDialog = Application.FileDialog(msoFileDialogFilePicker)
+        With fDialog
+            .AllowMultiSelect = True
+            .Filters.Clear
+            .Filters.Add "Excel Files", "*.xls; *.xlsx; *.xlsm"
+
+            If .Show = -1 Then
+                For Each filePath In .SelectedItems
+
+                    Set wbSrc = Workbooks.Open(filePath)
+                    Set wsSrc = wbSrc.Sheets("data")
+
+                    nextRow = wsDest.Cells(wsDest.Rows.Count, "A").End(xlUp).Row + 1
+                    wsSrc.Range("A1:A10").Copy wsDest.Cells(nextRow, 1)
+
+                    wbSrc.Close False
+                Next filePath
+            End If
+        End With
+    End If
+
+    MsgBox "Data copied successfully!", vbInformation
+
+End Sub
+
+
