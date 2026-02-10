@@ -1,0 +1,127 @@
+Sub Consolidate_Volumetrics()
+
+    Dim fDialog As FileDialog
+    Dim folderPath As String
+    Dim fileName As String
+    Dim filePath As Variant
+    Dim selectedFile As Variant
+    Dim fileList As Collection
+    Dim userChoice As VbMsgBoxResult
+
+    Dim wbSrc As Workbook
+    Dim ws1 As Worksheet, ws2 As Worksheet
+    Dim wsDest As Worksheet
+
+    Dim lastRowSrc As Long
+    Dim destRow As Long
+    Dim last As Long
+
+    '-------------------------------
+    ' App settings OFF
+    '-------------------------------
+    Application.ScreenUpdating = False
+    Application.Calculation = xlCalculationManual
+    Application.EnableEvents = False
+
+    Set wsDest = ThisWorkbook.Sheets("Volumetric_data")
+    Set fileList = New Collection
+
+    '-------------------------------
+    ' USER OPTION : ALL or MULTIPLE
+    '-------------------------------
+    userChoice = MsgBox( _
+        "YES = Select ALL files from a folder" & vbCrLf & _
+        "NO = Select MULTIPLE files manually", _
+        vbYesNo + vbQuestion, "File Selection Mode")
+
+    '-------------------------------
+    ' YES → ALL FILES FROM FOLDER
+    '-------------------------------
+    If userChoice = vbYes Then
+
+        Set fDialog = Application.FileDialog(msoFileDialogFolderPicker)
+        fDialog.Title = "Select Folder (All Excel files will be processed)"
+
+        If fDialog.Show <> -1 Then GoTo ExitMacro
+        folderPath = fDialog.SelectedItems(1) & "\"
+
+        fileName = Dir(folderPath & "*.xls*")
+        Do While fileName <> ""
+            fileList.Add folderPath & fileName
+            fileName = Dir
+        Loop
+
+    '-------------------------------
+    ' NO → MULTIPLE FILE SELECTION
+    '-------------------------------
+    Else
+
+        Set fDialog = Application.FileDialog(msoFileDialogFilePicker)
+        With fDialog
+            .AllowMultiSelect = True
+            .Title = "Select Multiple Excel Files"
+            .Filters.Clear
+            .Filters.Add "Excel Files", "*.xls*"
+            If .Show <> -1 Then GoTo ExitMacro
+
+            For Each selectedFile In .SelectedItems
+                fileList.Add selectedFile
+            Next selectedFile
+        End With
+
+    End If
+
+    '-------------------------------
+    ' DESTINATION START ROW
+    '-------------------------------
+    destRow = wsDest.Cells(wsDest.Rows.Count, "A").End(xlUp).Row + 1
+
+    '-------------------------------
+    ' MAIN LOOP (COMMON FOR BOTH)
+    '-------------------------------
+    For Each filePath In fileList
+
+        Set wbSrc = Workbooks.Open(filePath, ReadOnly:=True, UpdateLinks:=False)
+
+        Set ws1 = wbSrc.Sheets(1)
+        Set ws2 = wbSrc.Sheets(2)
+
+        lastRowSrc = ws1.Cells(ws1.Rows.Count, "A").End(xlUp).Row
+
+        '-------------------------------
+        ' COPY DATA (example)
+        '-------------------------------
+        ws1.Range("A2:Y" & lastRowSrc).Copy wsDest.Cells(destRow, "A")
+        destRow = wsDest.Cells(wsDest.Rows.Count, "A").End(xlUp).Row + 1
+
+        wbSrc.Close SaveChanges:=False
+
+    Next filePath
+
+    '-------------------------------
+    ' FORMATTING & FORMULAS
+    '-------------------------------
+    last = wsDest.Cells(wsDest.Rows.Count, "Y").End(xlUp).Row
+
+    wsDest.Range("N3:N" & last).Formula = "=M3*1440"
+
+    With wsDest.Range("A3:AA" & last).Borders
+        .LineStyle = xlContinuous
+        .Weight = xlThin
+        .Color = vbBlack
+    End With
+
+    wsDest.Range("M3:M" & last).NumberFormat = "hh:mm:ss"
+    wsDest.Range("N3:N" & last).NumberFormat = "0.00"
+
+ExitMacro:
+    '-------------------------------
+    ' App settings ON
+    '-------------------------------
+    Application.ScreenUpdating = True
+    Application.Calculation = xlCalculationAutomatic
+    Application.EnableEvents = True
+
+    MsgBox "Consolidation completed successfully!", vbInformation
+
+End Sub
