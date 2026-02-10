@@ -16,9 +16,9 @@ Sub Consolidate_Volumetrics()
     Dim destRow As Long
     Dim last As Long
 
-    '-------------------------------
-    ' App settings OFF
-    '-------------------------------
+    '-----------------------------------
+    ' Application settings OFF
+    '-----------------------------------
     Application.ScreenUpdating = False
     Application.Calculation = xlCalculationManual
     Application.EnableEvents = False
@@ -26,17 +26,17 @@ Sub Consolidate_Volumetrics()
     Set wsDest = ThisWorkbook.Sheets("Volumetric_data")
     Set fileList = New Collection
 
-    '-------------------------------
-    ' USER OPTION : ALL or MULTIPLE
-    '-------------------------------
+    '-----------------------------------
+    ' USER CHOICE
+    '-----------------------------------
     userChoice = MsgBox( _
-        "YES = Select ALL files from a folder" & vbCrLf & _
-        "NO = Select MULTIPLE files manually", _
-        vbYesNo + vbQuestion, "File Selection Mode")
+        "YES = Select ALL Excel files from a folder" & vbCrLf & _
+        "NO = Select MULTIPLE Excel files manually", _
+        vbYesNo + vbQuestion, "File Selection")
 
-    '-------------------------------
+    '-----------------------------------
     ' YES → ALL FILES FROM FOLDER
-    '-------------------------------
+    '-----------------------------------
     If userChoice = vbYes Then
 
         Set fDialog = Application.FileDialog(msoFileDialogFolderPicker)
@@ -51,9 +51,9 @@ Sub Consolidate_Volumetrics()
             fileName = Dir
         Loop
 
-    '-------------------------------
+    '-----------------------------------
     ' NO → MULTIPLE FILE SELECTION
-    '-------------------------------
+    '-----------------------------------
     Else
 
         Set fDialog = Application.FileDialog(msoFileDialogFilePicker)
@@ -71,36 +71,50 @@ Sub Consolidate_Volumetrics()
 
     End If
 
-    '-------------------------------
+    '-----------------------------------
     ' DESTINATION START ROW
-    '-------------------------------
+    '-----------------------------------
     destRow = wsDest.Cells(wsDest.Rows.Count, "A").End(xlUp).Row + 1
 
-    '-------------------------------
-    ' MAIN LOOP (COMMON FOR BOTH)
-    '-------------------------------
+    '-----------------------------------
+    ' MAIN LOOP (COMMON)
+    '-----------------------------------
     For Each filePath In fileList
 
         Set wbSrc = Workbooks.Open(filePath, ReadOnly:=True, UpdateLinks:=False)
 
-        Set ws1 = wbSrc.Sheets(1)
-        Set ws2 = wbSrc.Sheets(2)
+        Set ws1 = wbSrc.Sheets("Step-1 Time and Motion")
+        Set ws2 = wbSrc.Sheets("Step-2 Volumetrics & FTE")
 
-        lastRowSrc = ws1.Cells(ws1.Rows.Count, "A").End(xlUp).Row
+        ' TRUE LAST ROW (NO FORMAT GARBAGE)
+        lastRowSrc = ws1.Cells(ws1.Rows.Count, "O").End(xlUp).Row
 
-        '-------------------------------
-        ' COPY DATA (example)
-        '-------------------------------
-        ws1.Range("A2:Y" & lastRowSrc).Copy wsDest.Cells(destRow, "A")
-        destRow = wsDest.Cells(wsDest.Rows.Count, "A").End(xlUp).Row + 1
+        '-----------------------------------
+        ' DATA CONSOLIDATION (AS PER IMAGES)
+        '-----------------------------------
+        wsDest.Cells(destRow, "A").Resize(1, 9).Value = _
+            Application.Transpose(ws1.Range("E7:E15").Value)
+
+        wsDest.Cells(destRow, "J").Resize(1, 2).Value = _
+            Application.Transpose(ws1.Range("H7:H8").Value)
+
+        wsDest.Cells(destRow, "L").Resize(1, 2).Value = _
+            Application.Transpose(ws1.Range("K7:K8").Value)
+
+        wsDest.Cells(destRow, "O").Resize(1, 12).Value = _
+            ws2.Range("K3:V3").Value
+
+        wsDest.Cells(destRow, "AA").Value = wbSrc.Name
+
+        destRow = destRow + 1
 
         wbSrc.Close SaveChanges:=False
 
     Next filePath
 
-    '-------------------------------
-    ' FORMATTING & FORMULAS
-    '-------------------------------
+    '-----------------------------------
+    ' FORMULAS & FORMATTING
+    '-----------------------------------
     last = wsDest.Cells(wsDest.Rows.Count, "Y").End(xlUp).Row
 
     wsDest.Range("N3:N" & last).Formula = "=M3*1440"
@@ -115,9 +129,9 @@ Sub Consolidate_Volumetrics()
     wsDest.Range("N3:N" & last).NumberFormat = "0.00"
 
 ExitMacro:
-    '-------------------------------
-    ' App settings ON
-    '-------------------------------
+    '-----------------------------------
+    ' Application settings ON
+    '-----------------------------------
     Application.ScreenUpdating = True
     Application.Calculation = xlCalculationAutomatic
     Application.EnableEvents = True
