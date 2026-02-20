@@ -3,34 +3,23 @@ Private Sub Worksheet_FollowHyperlink(ByVal Target As Hyperlink)
     Dim fileName As String
     Dim sc As SlicerCache
     Dim si As SlicerItem
-    Dim found As Boolean
     
-    'BJ column = File Name (62)
-    fileName = Me.Cells(Target.Range.Row, 62).Value
-    
-    Set sc = ThisWorkbook.SlicerCaches("File_name")
-    
-    found = False
+    'BJ column = 62 (agar alag hai to change karein)
+    fileName = Trim(Me.Cells(Target.Range.Row, 62).Value)
     
     Application.ScreenUpdating = False
     
+    Set sc = ThisWorkbook.SlicerCaches("Slicer_File_name1")
+    
     sc.ClearManualFilter
     
-    For Each si In sc.SlicerItems
-        If si.Name = fileName Then
-            si.Selected = True
-            found = True
-        Else
-            si.Selected = False
-        End If
+    'Data Model slicer ke liye
+    For Each si In sc.SlicerCacheLevels(1).SlicerItems
+        si.Selected = (si.Name = fileName)
     Next si
     
-    Application.ScreenUpdating = True
+    Sheets("View").Activate
     
-    If found Then
-        Sheets("View").Activate
-    Else
-        MsgBox "File not found in slicer!", vbExclamation
-    End If
+    Application.ScreenUpdating = True
 
 End Sub
