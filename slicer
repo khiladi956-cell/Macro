@@ -2,22 +2,34 @@ Private Sub Worksheet_FollowHyperlink(ByVal Target As Hyperlink)
 
     Dim fileName As String
     Dim sc As SlicerCache
-    Dim mdxName As String
+    Dim si As SlicerItem
+    Dim foundItem As String
     
-    'File column (example: BJ)
+    ' File column (BJ change if needed)
     fileName = Trim(Me.Cells(Target.Range.Row, "BJ").Value)
     
     Application.ScreenUpdating = False
     
     Set sc = ThisWorkbook.SlicerCaches("Slicer_File_name1")
     
-    'MDX format banana padega OLAP slicer ke liye
-    mdxName = "[File_name].[File_name].&[" & fileName & "]"
-    
     sc.ClearAllFilters
-    sc.VisibleSlicerItemsList = Array(mdxName)
     
-    Sheets("View").Activate
+    foundItem = ""
+    
+    ' OLAP slicer ke liye correct level se items lo
+    For Each si In sc.SlicerCacheLevels(1).SlicerItems
+        If Trim(si.Caption) = fileName Then
+            foundItem = si.Name   ' internal MDX name
+            Exit For
+        End If
+    Next si
+    
+    If foundItem <> "" Then
+        sc.VisibleSlicerItemsList = Array(foundItem)
+        Sheets("View").Activate
+    Else
+        MsgBox "File not found in slicer: " & fileName
+    End If
     
     Application.ScreenUpdating = True
 
