@@ -1,25 +1,20 @@
-Private Sub Worksheet_FollowHyperlink(ByVal Target As Hyperlink)
+Sub FilterOLAPSlicer(sc As SlicerCache, fileName As String)
 
-    Dim fileName As String
-    Dim sc As SlicerCache
     Dim si As SlicerItem
     Dim foundItem As String
     
-    'File column (BJ change if needed)
-    fileName = Trim(Me.Cells(Target.Range.Row, "BJ").Value)
+    sc.ClearAllFilters
+    foundItem = ""
     
-    Application.ScreenUpdating = False
+    For Each si In sc.SlicerCacheLevels(1).SlicerItems
+        If Trim(si.Caption) = fileName Then
+            foundItem = si.Name
+            Exit For
+        End If
+    Next si
     
-    '==== FIRST SLICER ====
-    Set sc = ThisWorkbook.SlicerCaches("Slicer_File_name1")
-    Call FilterOLAPSlicer(sc, fileName)
-    
-    '==== SECOND SLICER ====
-    Set sc = ThisWorkbook.SlicerCaches("Slicer_File_Name")
-    Call FilterOLAPSlicer(sc, fileName)
-    
-    Sheets("View").Activate
-    
-    Application.ScreenUpdating = True
+    If foundItem <> "" Then
+        sc.VisibleSlicerItemsList = Array(foundItem)
+    End If
 
 End Sub
