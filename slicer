@@ -5,31 +5,20 @@ Private Sub Worksheet_FollowHyperlink(ByVal Target As Hyperlink)
     Dim si As SlicerItem
     Dim foundItem As String
     
-    ' File column (BJ change if needed)
+    'File column (BJ change if needed)
     fileName = Trim(Me.Cells(Target.Range.Row, "BJ").Value)
     
     Application.ScreenUpdating = False
     
+    '==== FIRST SLICER ====
     Set sc = ThisWorkbook.SlicerCaches("Slicer_File_name1")
+    Call FilterOLAPSlicer(sc, fileName)
     
-    sc.ClearAllFilters
+    '==== SECOND SLICER ====
+    Set sc = ThisWorkbook.SlicerCaches("Slicer_File_Name")
+    Call FilterOLAPSlicer(sc, fileName)
     
-    foundItem = ""
-    
-    ' OLAP slicer ke liye correct level se items lo
-    For Each si In sc.SlicerCacheLevels(1).SlicerItems
-        If Trim(si.Caption) = fileName Then
-            foundItem = si.Name   ' internal MDX name
-            Exit For
-        End If
-    Next si
-    
-    If foundItem <> "" Then
-        sc.VisibleSlicerItemsList = Array(foundItem)
-        Sheets("View").Activate
-    Else
-        MsgBox "File not found in slicer: " & fileName
-    End If
+    Sheets("View").Activate
     
     Application.ScreenUpdating = True
 
