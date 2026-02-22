@@ -1,107 +1,205 @@
-Function TimeToText(t As Double) As String
-    Dim totalSeconds As Long
-    Dim hh As Long, mm As Long, ss As Long
+Sub Consolidate_Volumetrics()
 
-    totalSeconds = CLng(t * 86400)   ' Excel time → seconds
+'----------------------------------------
+' Variable Declaration
+'----------------------------------------
+Dim fDialog As FileDialog
+Dim folderPath As String
+Dim fileName As String
+Dim filePath As Variant
+Dim selectedFile As Variant
+Dim fileList As Collection
+Dim userChoice As VbMsgBoxResult
 
-    hh = totalSeconds \ 3600
-    mm = (totalSeconds Mod 3600) \ 60
-    ss = totalSeconds Mod 60
+Dim wbSrc As Workbook
+Dim ws1 As Worksheet, ws2 As Worksheet
+Dim wsDest As Worksheet
 
-    TimeToText = Format(hh, "00") & ":" & _
-                 Format(mm, "00") & ":" & _
-                 Format(ss, "00")
-End Function
+Dim lastRowSrc As Long
+Dim destRow As Long
+Dim last As Long
 
+'----------------------------------------
+' Performance OFF
+'----------------------------------------
+Application.ScreenUpdating = False
+Application.Calculation = xlCalculationManual
+Application.EnableEvents = False
 
+On Error GoTo ExitMacro
 
-Sub Save_file()
+Set wsDest = ThisWorkbook.Sheets("Vol Consol")
+Set fileList = New Collection
 
-    Dim filePath As Variant
-    Dim fileName As String
-    Dim b2Val As String, b3Val As String, b4Val As String, b5Val As String
-    Dim todayDate As String
-    Dim lastIRow As Long
-    Dim totalTime As Double
-    Dim response As VbMsgBoxResult
+'----------------------------------------
+' Header Insert
+'----------------------------------------
+wsDest.Range("AA3").Value = "Average Volume"
+wsDest.Range("AB3").Value = "Total Volume"
+wsDest.Range("AC3").Value = "Lowest Volume"
+wsDest.Range("AD3").Value = "Highest Volume"
 
-    '---------------------------------
-    ' Read mandatory header values
-    '---------------------------------
-    b2Val = Trim(Range("E7").Value)
-    b3Val = Trim(Range("E9").Value)
-    b4Val = Trim(Range("E12").Value)
-    b5Val = Trim(Range("E13").Value)
+'----------------------------------------
+' File Selection
+'----------------------------------------
+userChoice = MsgBox( _
+"YES = Select ALL Excel files from a folder" & vbCrLf & _
+"NO = Select MULTIPLE Excel files manually", _
+vbYesNo + vbQuestion, "File Selection")
 
-    If b2Val = "" Or b3Val = "" Or b4Val = "" Or b5Val = "" Then
-        MsgBox "E7, E9, E12 and E13 should not be empty!", vbCritical
-        Exit Sub
-    End If
+If userChoice = vbYes Then
 
-    '---------------------------------
-    ' Find last row of time data
-    '---------------------------------
-    lastIRow = Cells(Rows.Count, "U").End(xlUp).Row
+    Set fDialog = Application.FileDialog(msoFileDialogFolderPicker)
+    fDialog.Title = "Select Folder"
+    
+    If fDialog.Show <> -1 Then GoTo ExitMacro
+    
+    folderPath = fDialog.SelectedItems(1) & "\"
+    fileName = Dir(folderPath & "*.xls*")
+    
+    Do While fileName <> ""
+        fileList.Add folderPath & fileName
+        fileName = Dir
+    Loop
 
-    If lastIRow < 20 Then
-        MsgBox "No time data found!", vbExclamation
-        Exit Sub
-    End If
+Else
 
-    '---------------------------------
-    ' Calculate total time
-    '---------------------------------
-    totalTime = Application.WorksheetFunction.Sum(Range("U20:U" & lastIRow))
-
-    ' Show total time as TEXT in sheet
-    Range("E14").Value = TimeToText(totalTime)
-    Range("E14").NumberFormat = "@"
-
-    '---------------------------------
-    ' Ask user confirmation
-    '---------------------------------
-    response = MsgBox( _
-        "Total Time Calculated: " & TimeToText(totalTime) & vbCrLf & vbCrLf & _
-        "Do you want to SAVE this file?", _
-        vbQuestion + vbYesNo, _
-        "Confirm Save")
-
-    If response = vbNo Then Exit Sub
-
-    '---------------------------------
-    ' Generate file name
-    '---------------------------------
-    todayDate = Format(Now, "dd-mmm hh-mm")
-
-    fileName = "T&M" & "_" & b2Val & "_" & b4Val & "_" & b3Val & "_" & todayDate & ".xlsm"
-
-    '---------------------------------
-    ' Ask save location
-    '---------------------------------
-    filePath = Application.GetSaveAsFilename( _
-        InitialFileName:=fileName, _
-        FileFilter:="Excel Macro-Enabled Workbook (*.xlsm), *.xlsm", _
-        Title:="Select folder and save file")
-
-    If filePath = False Then
-        MsgBox "Save Cancelled.", vbExclamation
-        Exit Sub
-    End If
-
-    '---------------------------------
-    ' Save copy of workbook
-    '---------------------------------
-    ThisWorkbook.SaveCopyAs filePath
-
-    '---------------------------------
-    ' Clear sheet AFTER successful save
-    '---------------------------------
-    With ThisWorkbook.ActiveSheet
-        .Range("D20:U50").ClearContents
-        .Range("E7:E14").ClearContents
-        .Range("D20:U50").Interior.Color = xlNone
+    Set fDialog = Application.FileDialog(msoFileDialogFilePicker)
+    
+    With fDialog
+        .AllowMultiSelect = True
+        .Title = "Select Multiple Excel Files"
+        .Filters.Clear
+        .Filters.Add "Excel Files", "*.xls*"
+        
+        If .Show <> -1 Then GoTo ExitMacro
+        
+        For Each selectedFile In .SelectedItems
+            fileList.Add selectedFile
+        Next selectedFile
     End With
 
-    MsgBox "File saved successfully!", vbInformation
+End If
+
+'----------------------------------------
+' Destination Row
+'----------------------------------------
+destRow = wsDest.Cells(wsDest.Rows.Count, "A").End(xlUp).Row + 1
+
+'----------------------------------------
+' MAIN LOOP
+'----------------------------------------
+For Each filePath In fileList
+
+    Set wbSrc = Workbooks.Open(filePath, ReadOnly:=True, UpdateLinks:=False)
+    
+    On Error Resume Next
+    Set ws1 = wbSrc.Sheets("Step-1 Time and Motion")
+    Set ws2 = wbSrc.Sheets("Step-2 Volumetrics & FTE")
+    On Error GoTo 0
+    
+    If ws1 Is Nothing Or ws2 Is Nothing Then
+        wbSrc.Close False
+        GoTo NextFile
+    End If
+    
+    lastRowSrc = ws1.Cells(ws1.Rows.Count, "Q").End(xlUp).Row
+    
+    '----------------------------------------
+    ' Data Consolidation
+    '----------------------------------------
+    
+    wsDest.Cells(destRow, "A").Resize(1, 9).Value = _
+        Application.Transpose(ws1.Range("E7:E15").Value)
+        
+    wsDest.Cells(destRow, "J").Resize(1, 2).Value = _
+        Application.Transpose(ws1.Range("H7:H8").Value)
+        
+    wsDest.Cells(destRow, "L").Resize(1, 2).Value = _
+        Application.Transpose(ws1.Range("K7:K8").Value)
+        
+    wsDest.Cells(destRow, "O").Resize(1, 12).Value = _
+        ws2.Range("K3:V3").Value
+        
+    wsDest.Cells(destRow, "BI").Value = wbSrc.Name
+    
+    wsDest.Hyperlinks.Add _
+        Anchor:=wsDest.Cells(destRow, "BK"), _
+        Address:="", _
+        SubAddress:="'View'!A1", _
+        TextToDisplay:="View"
+    
+    destRow = destRow + 1
+    
+    wbSrc.Close False
+    
+NextFile:
+    Set ws1 = Nothing
+    Set ws2 = Nothing
+
+Next filePath
+
+'----------------------------------------
+' FORMULAS
+'----------------------------------------
+last = wsDest.Cells(wsDest.Rows.Count, "O").End(xlUp).Row
+
+wsDest.Range("AA4:AA" & last).Formula = "=IFERROR(AVERAGE(O4:Z4),"""")"
+wsDest.Range("AB4:AB" & last).Formula = "=IFERROR(SUM(O4:Z4),"""")"
+wsDest.Range("AC4:AC" & last).Formula = "=IFERROR(MIN(O4:Z4),"""")"
+wsDest.Range("AD4:AD" & last).Formula = "=IFERROR(MAX(O4:Z4),"""")"
+
+'----------------------------------------
+' Time Conversion
+'----------------------------------------
+wsDest.Range("N4:N" & last).Formula = "=M4*1440"
+
+wsDest.Range("M4:M" & last).NumberFormat = "hh:mm:ss"
+wsDest.Range("N4:N" & last).NumberFormat = "0.00"
+
+wsDest.Range("AE4:AH" & last).NumberFormat = "0"
+wsDest.Range("AN4:BJ" & last).NumberFormat = "0%"
+
+'----------------------------------------
+' Conditional Formatting
+'----------------------------------------
+wsDest.Range("AN4:BJ" & last).FormatConditions.Delete
+
+With wsDest.Range("AN4:BJ" & last).FormatConditions.Add( _
+        Type:=xlCellValue, Operator:=xlLess, Formula1:="-0.1")
+    .Interior.Color = RGB(255, 199, 206)
+End With
+
+With wsDest.Range("AN4:BJ" & last).FormatConditions.Add( _
+        Type:=xlCellValue, Operator:=xlGreater, Formula1:="0.1")
+    .Interior.Color = RGB(255, 199, 206)
+End With
+
+'----------------------------------------
+' Final Formatting
+'----------------------------------------
+With wsDest.Range("A4:BM" & last)
+    .Borders.LineStyle = xlDot
+    .Borders.Weight = xlThin
+    .Borders.Color = RGB(173, 216, 230)
+    .Font.Size = 9
+    .HorizontalAlignment = xlCenter
+    .VerticalAlignment = xlCenter
+End With
+
+'----------------------------------------
+' Exit
+'----------------------------------------
+ExitMacro:
+
+Application.ScreenUpdating = True
+Application.Calculation = xlCalculationAutomatic
+Application.EnableEvents = True
+
+If Err.Number = 0 Then
+    MsgBox "Volumetrics Consolidation completed successfully!", vbInformation
+Else
+    MsgBox "Error: " & Err.Description, vbCritical
+End If
 
 End Sub
