@@ -1,0 +1,182 @@
+Sub Consolidate_Time_Motion_And_Volumetrics()
+
+'----------------------------------------
+' Variable Declaration
+'----------------------------------------
+Dim fDialog As FileDialog
+Dim folderPath As String
+Dim fileName As String
+Dim filePath As Variant
+Dim selectedFile As Variant
+Dim fileList As Collection
+Dim userChoice As VbMsgBoxResult
+
+Dim wbSrc As Workbook
+Dim ws1 As Worksheet, ws2 As Worksheet
+Dim wsDest As Worksheet
+
+Dim lastRowSrc As Long
+Dim destRow As Long
+Dim last As Long
+Dim i As Long
+
+'----------------------------------------
+' Performance Settings OFF
+'----------------------------------------
+Application.ScreenUpdating = False
+Application.Calculation = xlCalculationManual
+Application.EnableEvents = False
+
+On Error GoTo ExitMacro
+
+'----------------------------------------
+' Destination Sheet
+'----------------------------------------
+Set wsDest = ThisWorkbook.Sheets("T&M Consol")
+Set fileList = New Collection
+
+'----------------------------------------
+' File Selection Option
+'----------------------------------------
+userChoice = MsgBox( _
+"YES = Select ALL Excel files from a folder" & vbCrLf & _
+"NO = Select MULTIPLE Excel files manually", _
+vbYesNo + vbQuestion, "File Selection")
+
+'----------------------------------------
+' YES → Select Folder
+'----------------------------------------
+If userChoice = vbYes Then
+
+    Set fDialog = Application.FileDialog(msoFileDialogFolderPicker)
+    fDialog.Title = "Select Folder (All Excel files will be processed)"
+    
+    If fDialog.Show <> -1 Then GoTo ExitMacro
+    
+    folderPath = fDialog.SelectedItems(1) & "\"
+    fileName = Dir(folderPath & "*.xls*")
+    
+    Do While fileName <> ""
+        fileList.Add folderPath & fileName
+        fileName = Dir
+    Loop
+
+'----------------------------------------
+' NO → Select Multiple Files
+'----------------------------------------
+Else
+
+    Set fDialog = Application.FileDialog(msoFileDialogFilePicker)
+    
+    With fDialog
+        .AllowMultiSelect = True
+        .Title = "Select Multiple Excel Files"
+        .Filters.Clear
+        .Filters.Add "Excel Files", "*.xls*"
+        
+        If .Show <> -1 Then GoTo ExitMacro
+        
+        For Each selectedFile In .SelectedItems
+            fileList.Add selectedFile
+        Next selectedFile
+    End With
+
+End If
+
+'----------------------------------------
+' Destination Start Row
+'----------------------------------------
+destRow = wsDest.Cells(wsDest.Rows.Count, "A").End(xlUp).Row + 1
+
+'----------------------------------------
+' MAIN LOOP
+'----------------------------------------
+For Each filePath In fileList
+
+    Set wbSrc = Workbooks.Open(filePath, ReadOnly:=True, UpdateLinks:=False)
+    
+    On Error Resume Next
+    Set ws1 = wbSrc.Sheets("Step-1 Time and Motion")
+    Set ws2 = wbSrc.Sheets("step-2 Volumetrics & FTE")
+    On Error GoTo 0
+    
+    ' Skip file if sheets not found
+    If ws1 Is Nothing Or ws2 Is Nothing Then
+        wbSrc.Close False
+        Set ws1 = Nothing
+        Set ws2 = Nothing
+        GoTo NextFile
+    End If
+    
+    lastRowSrc = ws1.Cells(ws1.Rows.Count, "D").End(xlUp).Row
+    
+    '----------------------------------------
+    ' Data Consolidation
+    '----------------------------------------
+    For i = 21 To lastRowSrc
+        
+        ' Static Transpose Data
+        wsDest.Cells(destRow, "A").Resize(1, 9).Value = _
+            Application.Transpose(ws1.Range("E7:E15").Value)
+            
+        wsDest.Cells(destRow, "J").Resize(1, 2).Value = _
+            Application.Transpose(ws1.Range("H7:H8").Value)
+            
+        ' Row Data
+        wsDest.Cells(destRow, "L").Resize(1, 14).Value = _
+            ws1.Cells(i, "D").Resize(1, 14).Value
+            
+        ' Additional Static
+        wsDest.Cells(destRow, "Z").Resize(1, 2).Value = _
+            Application.Transpose(ws1.Range("K7:K8").Value)
+        
+        ' File Name
+        wsDest.Cells(destRow, "AC").Value = wbSrc.Name
+        
+        destRow = destRow + 1
+        
+    Next i
+    
+    wbSrc.Close False
+    
+NextFile:
+Next filePath
+
+'----------------------------------------
+' FORMULAS & FORMATTING
+'----------------------------------------
+last = wsDest.Cells(wsDest.Rows.Count, "AC").End(xlUp).Row
+
+' Time to Minutes
+wsDest.Range("Z3:Z" & last).Formula = "=Y3*1440"
+
+' Borders & Alignment
+With wsDest.Range("A3:AC" & last)
+    .Borders.LineStyle = xlDot
+    .Borders.Weight = xlThin
+    .Borders.Color = RGB(173, 216, 230)
+    .Font.Size = 9
+    .HorizontalAlignment = xlCenter
+    .VerticalAlignment = xlCenter
+End With
+
+' Number Formats
+wsDest.Range("Y3:Y" & last).NumberFormat = "hh:mm:ss"
+wsDest.Range("Z3:Z" & last).NumberFormat = "0.00"
+
+'----------------------------------------
+' EXIT SECTION
+'----------------------------------------
+ExitMacro:
+
+Application.ScreenUpdating = True
+Application.Calculation = xlCalculationAutomatic
+Application.EnableEvents = True
+
+If Err.Number = 0 Then
+    MsgBox "Consolidation completed successfully!", vbInformation
+Else
+    MsgBox "Error: " & Err.Description, vbCritical
+End If
+
+End Sub
