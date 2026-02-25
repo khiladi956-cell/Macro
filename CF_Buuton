@@ -1,0 +1,47 @@
+Sub Apply_Gap_Formatting(percentValue As Double, _
+                         insideOrOutside As String, _
+                         fillColor As Long)
+
+    Dim ws As Worksheet
+    Dim lastRow As Long
+    Dim lastCol As Long
+    Dim firstDataCol As Long
+    Dim avgCol As Long
+    Dim dataRange As Range
+    Dim avgColLetter As String
+    Dim formulaText As String
+    
+    Set ws = Sheets("Output")
+    
+    lastRow = ws.Cells(ws.Rows.Count, 1).End(xlUp).Row
+    lastCol = ws.Cells(1, ws.Columns.Count).End(xlToLeft).Column
+    
+    firstDataCol = 6              'Data starts from column F
+    avgCol = lastCol              'Last column = Average
+    
+    avgColLetter = Split(ws.Cells(1, avgCol).Address, "$")(1)
+    
+    Set dataRange = ws.Range(ws.Cells(2, firstDataCol), _
+                             ws.Cells(lastRow, avgCol - 1))
+    
+    'Old formatting remove
+    dataRange.FormatConditions.Delete
+    
+    If insideOrOutside = "INSIDE" Then
+        
+        formulaText = "=AND(F2<>"""",ABS(F2-$" & avgColLetter & _
+                      "2)<=($" & avgColLetter & "2*" & percentValue & "))"
+    
+    ElseIf insideOrOutside = "OUTSIDE" Then
+        
+        formulaText = "=AND(F2<>"""",ABS(F2-$" & avgColLetter & _
+                      "2)>($" & avgColLetter & "2*" & percentValue & "))"
+    
+    End If
+    
+    With dataRange.FormatConditions.Add(Type:=xlExpression, _
+                                        Formula1:=formulaText)
+        .Interior.Color = fillColor
+    End With
+
+End Sub
