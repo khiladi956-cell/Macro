@@ -1,0 +1,112 @@
+Sub Copy_Step_To_Flow_Final()
+
+    Dim wsSource As Worksheet
+    Dim wsFlow As Worksheet
+    Dim lastRow As Long
+    Dim i As Long
+    Dim colIndex As Long
+    Dim minsValue As Double
+    Dim shp As Shape
+    Dim arrowLeft As Double
+    Dim arrowTop As Double
+    Dim fillColor As Long
+    Dim arrowWidth As Double
+    Dim arrowHeight As Double
+    
+    Set wsSource = ThisWorkbook.Worksheets("Analysis")
+    Set wsFlow = ThisWorkbook.Worksheets("Flow")
+    
+    'Clear old data
+    wsFlow.Rows("4:5").ClearContents
+    
+    'Delete old arrows
+    For Each shp In wsFlow.Shapes
+        If shp.Name Like "Arrow_*" Then shp.Delete
+    Next shp
+    
+    '================ HEADERS =================
+    wsFlow.Cells(4, 1).Value = "Step Name"
+    wsFlow.Cells(5, 1).Value = "Duration"
+    
+    wsFlow.Cells(4, 1).Font.Bold = True
+    wsFlow.Cells(5, 1).Font.Bold = True
+    
+    'Start from Column 3 (C column)
+    colIndex = 3
+    
+    lastRow = wsSource.Cells(wsSource.Rows.Count, "F").End(xlUp).Row
+    
+    For i = 21 To lastRow
+        
+        If wsSource.Cells(i, "F").Value <> "" Then
+            
+            minsValue = Round(wsSource.Cells(i, "L").Value * 1440, 2)
+            
+            '===== 4 LEVEL COLOR LOGIC =====
+            If minsValue <= 5 Then
+                fillColor = RGB(198, 239, 206)
+            ElseIf minsValue <= 15 Then
+                fillColor = RGB(255, 235, 156)
+            ElseIf minsValue <= 30 Then
+                fillColor = RGB(255, 199, 156)
+            Else
+                fillColor = RGB(255, 199, 206)
+            End If
+            
+            '================ STEP NAME =================
+            With wsFlow.Cells(4, colIndex)
+                .Value = wsSource.Cells(i, "F").Value
+                .WrapText = True
+                .ColumnWidth = 60
+                wsFlow.Rows(4).RowHeight = 30
+                .HorizontalAlignment = xlCenter
+                .VerticalAlignment = xlCenter
+                .Interior.Color = fillColor
+                
+                .Borders.LineStyle = xlContinuous
+                .Borders.Weight = xlMedium
+                .Borders.Color = RGB(32, 55, 100) ' #203764
+            End With
+            
+            '================ DURATION =================
+            With wsFlow.Cells(5, colIndex)
+                .Value = minsValue
+                .NumberFormat = "0.00 ""mins"""
+                .Font.Bold = True
+                .Font.Size = 11
+                .HorizontalAlignment = xlCenter
+            End With
+            
+            '================ ARROW =================
+            If i < lastRow Then
+                
+                wsFlow.Columns(colIndex + 1).ColumnWidth = 16
+                
+                arrowWidth = 40
+                arrowHeight = 20
+                
+                arrowLeft = wsFlow.Cells(4, colIndex + 1).Left + _
+                            (wsFlow.Cells(4, colIndex + 1).Width - arrowWidth) / 2
+                            
+                arrowTop = wsFlow.Cells(4, colIndex).Top + _
+                           (wsFlow.Rows(4).Height - arrowHeight) / 2
+                
+                Set shp = wsFlow.Shapes.AddShape(msoShapeRightArrow, _
+                            arrowLeft, arrowTop, arrowWidth, arrowHeight)
+                            
+                shp.Name = "Arrow_" & colIndex
+                shp.Fill.ForeColor.RGB = RGB(32, 55, 100)
+                shp.Line.Visible = msoFalse
+                
+            End If
+            
+            colIndex = colIndex + 2
+            
+        End If
+        
+    Next i
+    
+    MsgBox "Flow Created Successfully (Column 3 Start + Headers Added)!"
+    
+End Sub
+
