@@ -1,0 +1,174 @@
+Sub Copy_Step_To_Flow_Final()
+
+Dim wsSource As Worksheet
+Dim wsFlow As Worksheet
+Dim lastRow As Long
+Dim i As Long
+
+Dim colIndex As Long
+Dim rowStep As Long
+Dim stepCount As Long
+Dim direction As Integer
+
+Dim minsValue As Double
+Dim fillColor As Long
+
+Dim shp As Shape
+Dim arrowLeft As Double
+Dim arrowTop As Double
+
+Dim arrowWidth As Double
+Dim arrowHeight As Double
+
+Set wsSource = ThisWorkbook.Worksheets("Analysis")
+Set wsFlow = ThisWorkbook.Worksheets("Flow")
+
+Application.ScreenUpdating = False
+
+wsFlow.Cells.Clear
+
+For Each shp In wsFlow.Shapes
+    shp.Delete
+Next shp
+
+rowStep = 4
+colIndex = 3
+stepCount = 0
+direction = 1
+
+arrowWidth = 32
+arrowHeight = Application.CentimetersToPoints(1.06)
+
+lastRow = wsSource.Cells(wsSource.Rows.Count, "F").End(xlUp).Row
+
+For i = 21 To lastRow
+
+If wsSource.Cells(i, "F").Value <> "" Then
+
+minsValue = Round(wsSource.Cells(i, "L").Value * 1440, 2)
+
+If minsValue <= 5 Then
+fillColor = RGB(198, 239, 206)
+ElseIf minsValue <= 15 Then
+fillColor = RGB(255, 235, 156)
+ElseIf minsValue <= 30 Then
+fillColor = RGB(255, 199, 156)
+Else
+fillColor = RGB(255, 199, 206)
+End If
+
+'STEP NAME
+With wsFlow.Cells(rowStep, colIndex)
+
+.Value = wsSource.Cells(i, "F").Value
+.WrapText = True
+.HorizontalAlignment = xlCenter
+.VerticalAlignment = xlCenter
+.Interior.Color = fillColor
+
+.Borders.LineStyle = xlContinuous
+.Borders.Weight = xlMedium
+.Borders.Color = RGB(32, 55, 100)
+
+.ColumnWidth = 32
+
+End With
+
+wsFlow.Rows(rowStep).RowHeight = 55
+
+'DURATION
+With wsFlow.Cells(rowStep + 1, colIndex)
+
+.Value = minsValue
+.NumberFormat = "0.00 ""mins"""
+.HorizontalAlignment = xlCenter
+.Font.Bold = True
+
+End With
+
+'BROAD TYPE
+With wsFlow.Cells(rowStep + 2, colIndex)
+
+.Value = wsSource.Cells(i, "E").Value
+.HorizontalAlignment = xlCenter
+.Interior.Color = RGB(217, 217, 217)
+.Font.Size = 12
+
+End With
+
+
+stepCount = stepCount + 1
+
+'RIGHT / LEFT ARROW
+If i < lastRow Then
+
+If stepCount < 6 Then
+
+If direction = 1 Then
+
+arrowLeft = wsFlow.Cells(rowStep, colIndex).Left + wsFlow.Cells(rowStep, colIndex).Width + 2
+arrowTop = wsFlow.Cells(rowStep, colIndex).Top + (wsFlow.Rows(rowStep).Height / 2) - 8
+
+Set shp = wsFlow.Shapes.AddShape(msoShapeRightArrow, arrowLeft, arrowTop, arrowWidth, arrowHeight)
+
+Else
+
+arrowLeft = wsFlow.Cells(rowStep, colIndex).Left - arrowWidth - 2
+arrowTop = wsFlow.Cells(rowStep, colIndex).Top + (wsFlow.Rows(rowStep).Height / 2) - 8
+
+Set shp = wsFlow.Shapes.AddShape(msoShapeLeftArrow, arrowLeft, arrowTop, arrowWidth, arrowHeight)
+
+End If
+
+shp.Fill.ForeColor.RGB = RGB(32, 55, 100)
+shp.Line.Visible = msoFalse
+
+End If
+
+End If
+
+If direction = 1 Then
+colIndex = colIndex + 2
+Else
+colIndex = colIndex - 2
+End If
+
+'AFTER 6 STEPS
+If stepCount = 6 And i < lastRow Then
+
+stepCount = 0
+
+'CENTER ALIGNMENT
+arrowLeft = wsFlow.Cells(rowStep, colIndex - (2 * direction)).Left + _
+(wsFlow.Cells(rowStep, colIndex - (2 * direction)).Width / 2) - (arrowWidth / 2)
+
+'DOWN ARROW IN GAP ROW 4-5
+arrowTop = wsFlow.Cells(rowStep + 4, colIndex - (2 * direction)).Top
+
+Set shp = wsFlow.Shapes.AddShape(msoShapeDownArrow, arrowLeft, arrowTop, arrowWidth, arrowHeight)
+
+shp.Fill.ForeColor.RGB = RGB(32, 55, 100)
+shp.Line.Visible = msoFalse
+
+'NEXT ROW START (5 ROW GAP)
+rowStep = rowStep + 6
+
+direction = direction * -1
+
+If direction = -1 Then
+colIndex = 13
+Else
+colIndex = 3
+End If
+
+End If
+
+End If
+
+Next i
+
+Application.ScreenUpdating = True
+
+MsgBox "Flowchart Generated Successfully"
+
+End Sub
