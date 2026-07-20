@@ -1,0 +1,10 @@
+Things Covered So Far:
+
+With support from Raghu's team, the NetSuite data is now being received in the mailbox and automatically moved to SharePoint.
+Successfully integrated the SharePoint data into Power BI, enabling a fully automated data flow with no manual intervention.
+Created the GL Account and Report datasets in Power BI.
+
+Working On:
+
+Building the data append functionality to process incoming files sequentially (one after another).
+Once the append process is complete, I will start developing the Watchlist logic in Power BI.
