@@ -1,14 +1,16 @@
 Hi [Name],
 
-I am currently working on the **OTC Watchlist** and building a **daily watchlist in Power BI**.
+I am currently working on the **OTC Watchlist in Power BI** and need some clarification regarding the **Collector mapping**.
 
-To support this, I would need your help with the following:
+We already have a **Collector** column in our data. However, to build the watchlist correctly in Power BI, we need to understand the mapping and scope of each Collector.
 
-1. **CGM List & Mapping:** Please share the CGM list along with the relevant mapping details.
-2. **Latest CGM List:** Could you please share the latest updated CGM list available?
-3. **Salesforce Connection:** If possible, could you please help me connect Power BI to Salesforce so that we can directly retrieve and maintain the latest CGM list?
+Could you please provide the mapping details, specifically:
 
-This will help ensure that the daily OTC Watchlist in Power BI is based on the latest and accurate CGM information.
+* Which **Subsidiary** each Collector is responsible for
+* Whether the mapping is based on **Customer**, **DK**, **Entity**, or any other criteria
+* Any other relevant mapping or business rules used to determine which accounts/customers/entities are assigned to each Collector
+
+This mapping will help us ensure that the OTC Watchlist reflects the correct Collector responsibility in Power BI.
 
 Thank you for your support.
 
