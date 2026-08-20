@@ -1,18 +1,24 @@
-Hi [Name],
-
-I am currently working on the **OTC Watchlist in Power BI** and need some clarification regarding the **Collector mapping**.
-
-We already have a **Collector** column in our data. However, to build the watchlist correctly in Power BI, we need to understand the mapping and scope of each Collector.
-
-Could you please provide the mapping details, specifically:
-
-* Which **Subsidiary** each Collector is responsible for
-* Whether the mapping is based on **Customer**, **DK**, **Entity**, or any other criteria
-* Any other relevant mapping or business rules used to determine which accounts/customers/entities are assigned to each Collector
-
-This mapping will help us ensure that the OTC Watchlist reflects the correct Collector responsibility in Power BI.
-
-Thank you for your support.
-
-Best regards,
-[Your Name]
+let
+    Source = SharePoint.Files("https://gbtravel.sharepoint.com/sites/Finance", [ApiVersion = 15]),
+    #"Filtered Rows" = Table.SelectRows(Source, each Text.Contains([Folder Path], "051100")),
+    #"Filtered Hidden Files1" = Table.SelectRows(#"Filtered Rows", each [Attributes]?[Hidden]? <> true),
+    #"Invoke Custom Function1" = Table.AddColumn(#"Filtered Hidden Files1", "Transform File", each #"Transform File"([Content])),
+    #"Renamed Columns1" = Table.RenameColumns(#"Invoke Custom Function1", {"Name", "Source.Name"}),
+    #"Removed Other Columns1" = Table.SelectColumns(#"Renamed Columns1", {"Source.Name", "Transform File"}),
+    #"Expanded Table Column1" = Table.ExpandTableColumn(#"Removed Other Columns1", "Transform File", Table.ColumnNames(#"Transform File"(#"Sample File"))),
+    #"Removed Columns" = Table.RemoveColumns(#"Expanded Table Column1",{"GBT Company: Name ", "Terms "}),
+    #"Inserted First Characters" = Table.AddColumn(#"Removed Columns", "First Characters", each Text.Start([#"Customer "], 4), type text),
+    #"Extracted Text Before Delimiter" = Table.TransformColumns(#"Inserted First Characters", {{"Source.Name", each Text.BeforeDelimiter(_, "."), type text}}),
+    #"Split Column by Delimiter" = Table.SplitColumn(#"Extracted Text Before Delimiter", "Source.Name", Splitter.SplitTextByDelimiter("_", QuoteStyle.Csv), {"Source.Name.1", "Source.Name.2", "Source.Name.3"}),
+    #"Changed Type" = Table.TransformColumnTypes(#"Split Column by Delimiter",{{"Source.Name.1", Int64.Type}, {"Source.Name.2", type date}, {"Source.Name.3", type text}}),
+    #"Renamed Columns" = Table.RenameColumns(#"Changed Type",{{"Source.Name.1", "GL_Account"}, {"Source.Name.2", "Report_Date"}, {"First Characters", "Entity_Id"}}),
+    #"Removed Columns1" = Table.RemoveColumns(#"Renamed Columns",{"Source.Name.3"}),
+    #"Changed Type1" = Table.TransformColumnTypes(#"Removed Columns1",{{"Current ", type number}, {"30", type number}, {"60", type number}, {"90", type number}, {"180", type number}, {"360", type number}, {">360", type number}, {"Total ", type number}}),
+    #"Inserted Sum" = Table.AddColumn(#"Changed Type1", "Addition", each List.Sum({[30], [60], [90], [180], [360], [#">360"]}), type number),
+    #"Renamed Columns2" = Table.RenameColumns(#"Inserted Sum",{{"Addition", "Total_OverDue"}}),
+    #"Inserted Sum1" = Table.AddColumn(#"Renamed Columns2", "Addition", each List.Sum({[60], [90], [180], [360], [#">360"]}), type number),
+    #"Renamed Columns3" = Table.RenameColumns(#"Inserted Sum1",{{"Addition", ">30D OverDue"}}),
+    #"Inserted Sum2" = Table.AddColumn(#"Renamed Columns3", "Addition", each List.Sum({[90], [180], [360], [#">360"]}), type number),
+    #"Renamed Columns4" = Table.RenameColumns(#"Inserted Sum2",{{"Addition", ">60D OverDue"}})
+in
+    #"Renamed Columns4"
