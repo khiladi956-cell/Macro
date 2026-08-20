@@ -1,0 +1,9 @@
+let
+    Source = Csv.Document(Parameter1,[Delimiter=",", Columns=16, Encoding=65001, QuoteStyle=QuoteStyle.None]),
+    #"Filtered Rows" = Table.SelectRows(Source, each ([Column1] <> "" and [Column1] <> "A/R Aging Summary with Collection Status" and [Column1] <> "NFP PRODUCTION" and [Column1] <> "Total GBT - No Transactions (Consolidated)")),
+    #"Filtered Rows1" = Table.SelectRows(#"Filtered Rows", each not Text.Contains([Column1], "End of")),
+    #"Promoted Headers" = Table.PromoteHeaders(#"Filtered Rows1", [PromoteAllScalars=true]),
+    Custom1 = Table.TransformColumnNames(#"Promoted Headers",each if Text.Contains(_,"(>360)") then ">360" else if Text.Contains(_,"(") and Text.Contains(_, ")") then Text.BetweenDelimiters(_, "(",")") else _ ),
+    #"Filtered Rows2" = Table.SelectRows(Custom1, each ([#"Subsidiary: Name "] <> "Total"))
+in
+    #"Filtered Rows2"
