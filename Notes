@@ -1,0 +1,62 @@
+Hi Team,
+
+Following today’s meeting, please find below the summary of the items completed and the pending requirements for the OTC Watchlist Analytics.
+
+### Completed
+
+1. **Watchlist**
+
+   * Watchlist analysis has been completed.
+
+2. **OTC Watchlist Analytics**
+   The following metrics have been created:
+
+   * **Actual Overdue** – comparison vs. Initial Date
+   * **GMN Overdue** – comparison vs. Initial Date
+   * **SME Overdue** – comparison vs. Initial Date
+   * **EGE Overdue** – comparison vs. Initial Date
+
+3. **Weekly Overdue Trend**
+
+   * Weekly overdue trend analysis has been created to track movement over time.
+
+4. **Segment-wise Overdue**
+
+   * Overdue analysis by segment has been incorporated.
+
+5. **Data Filtering**
+   The analytics will include the following filters:
+
+   * **Actual Overdue**
+   * **Vs. Last Week (LW)**
+   * **+30 Days Overdue**
+
+   The **+30 Days Overdue** view will be available under both the **Actual Overdue** and **Vs. Last Week** filters.
+
+   Therefore, the proposed structure is to have **two primary filters: Actual Overdue and Vs. Last Week**, with the **+30 Days Overdue** analysis available within both views.
+
+### Pending / Required Input & Enhancements
+
+1. **Identification Batch – Initial Data**
+
+   * I will be sharing the Identification Batch sheet.
+   * Please provide the **Initial Date data** in the Identification Batch sheet so that the Initial Date comparison can be completed accurately.
+
+2. **Account Name Sorting**
+
+   * Implement sorting for the Account Name to ensure the data is displayed in the required sequence.
+
+3. **Batch / Non-Batch Customer View**
+
+   * Create separate filtering/views for **all customers with Batch** and **all customers without Batch**.
+
+4. **From & To Date Comparison**
+
+   * Implement **From Date vs. To Date comparison** to allow users to analyze the overdue movement between two selected dates.
+
+### Feedback / Suggestions
+
+Please share your feedback on the above analytics, including any changes, additional requirements, or suggestions you may have. This will help me incorporate the necessary changes and finalize the dashboard.
+
+Thanks,
+[Your Name]
